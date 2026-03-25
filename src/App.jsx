@@ -2,22 +2,19 @@
 // React Router configuration.
 // Routes:
 //   /            → Home (create or join a game)
-//   /host/:gameId → HostLobby (host control screen)
-//   /play/:gameId → PlayerLobby (player phone screen)
+//   /lobby/:code → Lobby (lobby screen)
 
-import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Home from './screens/Home';
-import HostLobby from './screens/HostLobby';
-import PlayerLobby from './screens/PlayerLobby';
+import React from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Home from "./pages/Home";
+import Lobby from "./pages/Lobby";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/host/:gameId" element={<HostLobby />} />
-        <Route path="/play/:gameId" element={<PlayerLobby />} />
+        <Route path="/lobby/:code" element={<Lobby />} />
       </Routes>
     </BrowserRouter>
   );

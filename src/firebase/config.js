@@ -3,8 +3,8 @@
 // Replace these values with your own Firebase project settings from
 // https://console.firebase.google.com → Project Settings → Your apps → SDK setup.
 
-import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { initializeApp } from "firebase/app";
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -16,6 +16,4 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-
-// Export the Firestore database instance for use throughout the app
 export const db = getFirestore(app);

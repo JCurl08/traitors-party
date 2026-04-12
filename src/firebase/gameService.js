@@ -1,6 +1,3 @@
-// src/firebase/gameService.js
-// All Firestore interactions for the Traitors Party game.
-
 import { db } from "./config";
 import {
   collection,

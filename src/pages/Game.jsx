@@ -17,14 +17,14 @@ const TEAM_COLORS = { A: "#3b82f6", B: "#ef4444" };
 const ROUND_RULES = {
   1: {
     title: "📖 Round 1 — Free Describe",
-    intro: "Players take turns getting their team to guess cards from the deck.",
-    turnRule: "Say anything — words, sounds, gestures — to get your team to guess the card. You cannot say the word itself.",
+    intro: "Players take turns getting their team to guess as mnay cards from the deck as possible within the time limit.",
+    turnRule: "Say anything — words, sounds, gestures — to get your team to guess the word or phrase on the card. You cannot say the word itself.",
     gotItNote: "The card moves to Round 2's deck and your team scores a point.",
     extra: "After time runs out the next player from the opposite team takes a turn. The round ends when all cards have been guessed.",
   },
   2: {
     title: "🔤 Round 2 — One Word",
-    intro: "Same cards, new challenge! The deck contains all the cards guessed in Round 1.",
+    intro: "Same cards, new challenge! The deck contains all the same cards as Round 1.",
     turnRule: "You may only say ONE word to get your team to guess the card. No gestures, no extra sounds — just one word!",
     gotItNote: "The card moves to Round 3's deck and your team scores a point.",
     extra: "The round ends when all cards have been guessed.",
@@ -32,7 +32,7 @@ const ROUND_RULES = {
   3: {
     title: "🎭 Round 3 — Charades",
     intro: "Final round! Same cards again, but now you cannot say a single word.",
-    turnRule: "No talking at all — act it out, mime, use gestures. Your team should know these cards well by now!",
+    turnRule: "No talking or soundeffects — act it out, mime, use gestures. Your team should know these cards well by now!",
     gotItNote: "Your team scores a point.",
     extra: "The round ends when all cards have been guessed.",
   },

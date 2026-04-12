@@ -183,7 +183,7 @@ export async function startGame(code) {
       players.flatMap((p) => cardSubmissions[p])
     );
 
-    // Initialise scores
+    // Initialize scores
     const scores = Object.fromEntries(players.map((p) => [p, 0]));
 
     tx.update(gameRef, {

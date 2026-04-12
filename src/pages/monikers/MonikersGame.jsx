@@ -273,7 +273,7 @@ function RoundOverScreen({ code, game, round, isHost, onNextRound, loading, erro
             }}
           >
             <span>
-              {i === 0 && !isLastRound ? "" : ""}
+              {i === 0 ? "🏆 " : ""}
               {p}
             </span>
             <strong>{game.scores?.[p] || 0}</strong>

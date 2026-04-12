@@ -36,6 +36,7 @@ export async function createGame(hostName, gameName) {
     playerOrder: [],
     currentTurnIndex: 0,
     scores: { A: 0, B: 0 },
+    roundScores: [],
     deck: [],
     phase2Deck: [],
     acceptedEntries: [],
@@ -111,12 +112,20 @@ export async function startGame(code) {
     .map((p) => p.name)
     .sort(() => Math.random() - 0.5);
 
-  // Interleave A, B, A, B…
+  // Interleave A, B, A, B… strictly — repeat the smaller team so that no two
+  // consecutive players share a team, including at the wrap-around.
   const playerOrder = [];
-  const maxLen = Math.max(teamA.length, teamB.length);
-  for (let i = 0; i < maxLen; i++) {
-    if (teamA[i]) playerOrder.push(teamA[i]);
-    if (teamB[i]) playerOrder.push(teamB[i]);
+  if (teamA.length === 0 || teamB.length === 0) {
+    playerOrder.push(...teamA, ...teamB);
+  } else {
+    const totalSlots = 2 * Math.max(teamA.length, teamB.length);
+    for (let i = 0; i < totalSlots; i++) {
+      if (i % 2 === 0) {
+        playerOrder.push(teamA[(i / 2) % teamA.length]);
+      } else {
+        playerOrder.push(teamB[Math.floor(i / 2) % teamB.length]);
+      }
+    }
   }
 
   await updateDoc(gameRef, {
@@ -274,12 +283,14 @@ export async function startPhase2(code) {
   const shuffled = [...(data.phase2Deck || [])].sort(() => Math.random() - 0.5);
   const orderLen = (data.playerOrder || []).length;
   const nextIndex = orderLen > 0 ? ((data.currentTurnIndex || 0) + 1) % orderLen : 0;
+  const roundScores = [...(data.roundScores || []), data.scores || { A: 0, B: 0 }];
   await updateDoc(gameRef, {
     status: "rules2",
     phase: 2,
     deck: shuffled,
     phase2Deck: [],
     scores: { A: 0, B: 0 },
+    roundScores,
     currentTurnIndex: nextIndex,
     roundActive: false,
     roundStartedAt: null,
@@ -297,12 +308,14 @@ export async function startPhase3(code) {
   const shuffled = [...(data.phase2Deck || [])].sort(() => Math.random() - 0.5);
   const orderLen = (data.playerOrder || []).length;
   const nextIndex = orderLen > 0 ? ((data.currentTurnIndex || 0) + 1) % orderLen : 0;
+  const roundScores = [...(data.roundScores || []), data.scores || { A: 0, B: 0 }];
   await updateDoc(gameRef, {
     status: "rules3",
     phase: 3,
     deck: shuffled,
     phase2Deck: [],
     scores: { A: 0, B: 0 },
+    roundScores,
     currentTurnIndex: nextIndex,
     roundActive: false,
     roundStartedAt: null,

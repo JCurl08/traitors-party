@@ -389,24 +389,80 @@ function GamePlay({ code, game, myName, isCurrentPlayer, currentPlayerName, devM
 // ─── Score screen ─────────────────────────────────────────────────────────────
 
 function ScoreScreen({ code, game, isHost }) {
-  const scoreA = game.scores?.A || 0;
-  const scoreB = game.scores?.B || 0;
-  const winner = scoreA > scoreB ? "Team A" : scoreB > scoreA ? "Team B" : null;
+  const currentScores = game.scores || { A: 0, B: 0 };
+  // Build full history: all previous rounds + the just-completed round
+  const roundHistory = [...(game.roundScores || []), currentScores];
+
+  const totalA = roundHistory.reduce((sum, r) => sum + (r.A || 0), 0);
+  const totalB = roundHistory.reduce((sum, r) => sum + (r.B || 0), 0);
+  const winner = totalA > totalB ? "Team A" : totalB > totalA ? "Team B" : null;
   const isLastRound = game.phase === 3;
 
   return (
     <div style={{ textAlign: "center", padding: "2rem" }}>
       <h1>🏆 Round {game.phase} Complete!</h1>
-      <div style={{ display: "flex", justifyContent: "center", gap: "3rem", margin: "2rem 0" }}>
-        <div>
-          <h2 style={{ color: TEAM_COLORS.A, margin: "0 0 0.25rem" }}>Team A</h2>
-          <p style={{ fontSize: "2.5rem", margin: 0, fontWeight: "bold" }}>{scoreA}</p>
-        </div>
-        <div>
-          <h2 style={{ color: TEAM_COLORS.B, margin: "0 0 0.25rem" }}>Team B</h2>
-          <p style={{ fontSize: "2.5rem", margin: 0, fontWeight: "bold" }}>{scoreB}</p>
-        </div>
-      </div>
+
+      {/* Per-round breakdown + totals */}
+      <table
+        style={{
+          margin: "1.5rem auto",
+          borderCollapse: "collapse",
+          minWidth: "260px",
+          fontSize: "1rem",
+        }}
+      >
+        <thead>
+          <tr>
+            <th style={{ padding: "0.4rem 1.2rem", textAlign: "left" }}>Round</th>
+            <th style={{ padding: "0.4rem 1.2rem", color: TEAM_COLORS.A }}>Team A</th>
+            <th style={{ padding: "0.4rem 1.2rem", color: TEAM_COLORS.B }}>Team B</th>
+          </tr>
+        </thead>
+        <tbody>
+          {roundHistory.map((r, i) => (
+            <tr key={i} style={{ background: i % 2 === 0 ? "#f9fafb" : "white" }}>
+              <td style={{ padding: "0.4rem 1.2rem", color: "#6b7280", textAlign: "left" }}>
+                Round {i + 1}
+              </td>
+              <td style={{ padding: "0.4rem 1.2rem", fontWeight: "bold", textAlign: "center" }}>
+                {r.A || 0}
+              </td>
+              <td style={{ padding: "0.4rem 1.2rem", fontWeight: "bold", textAlign: "center" }}>
+                {r.B || 0}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr style={{ borderTop: "2px solid #e5e7eb" }}>
+            <td style={{ padding: "0.5rem 1.2rem", fontWeight: "bold", textAlign: "left" }}>
+              Total
+            </td>
+            <td
+              style={{
+                padding: "0.5rem 1.2rem",
+                fontWeight: "bold",
+                fontSize: "1.4rem",
+                textAlign: "center",
+                color: TEAM_COLORS.A,
+              }}
+            >
+              {totalA}
+            </td>
+            <td
+              style={{
+                padding: "0.5rem 1.2rem",
+                fontWeight: "bold",
+                fontSize: "1.4rem",
+                textAlign: "center",
+                color: TEAM_COLORS.B,
+              }}
+            >
+              {totalB}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
 
       {isLastRound ? (
         <h2 style={{ marginTop: "1rem" }}>

@@ -265,19 +265,45 @@ export async function endTurn(code) {
 
 /**
  * startPhase2 – host starts the second round, using the phase-1 success cards as the new deck.
+ * Continues the turn order from where round 1 left off so the next player (opposite team) goes first.
  */
 export async function startPhase2(code) {
   const gameRef = doc(db, "games", code);
   const snap = await getDoc(gameRef);
   const data = snap.data();
   const shuffled = [...(data.phase2Deck || [])].sort(() => Math.random() - 0.5);
+  const orderLen = (data.playerOrder || []).length;
+  const nextIndex = orderLen > 0 ? ((data.currentTurnIndex || 0) + 1) % orderLen : 0;
   await updateDoc(gameRef, {
-    status: "playing",
+    status: "rules2",
     phase: 2,
     deck: shuffled,
     phase2Deck: [],
     scores: { A: 0, B: 0 },
-    currentTurnIndex: 0,
+    currentTurnIndex: nextIndex,
+    roundActive: false,
+    roundStartedAt: null,
+  });
+}
+
+/**
+ * startPhase3 – host starts the third round, using the phase-2 success cards as the new deck.
+ * Continues the turn order from where round 2 left off.
+ */
+export async function startPhase3(code) {
+  const gameRef = doc(db, "games", code);
+  const snap = await getDoc(gameRef);
+  const data = snap.data();
+  const shuffled = [...(data.phase2Deck || [])].sort(() => Math.random() - 0.5);
+  const orderLen = (data.playerOrder || []).length;
+  const nextIndex = orderLen > 0 ? ((data.currentTurnIndex || 0) + 1) % orderLen : 0;
+  await updateDoc(gameRef, {
+    status: "rules3",
+    phase: 3,
+    deck: shuffled,
+    phase2Deck: [],
+    scores: { A: 0, B: 0 },
+    currentTurnIndex: nextIndex,
     roundActive: false,
     roundStartedAt: null,
   });

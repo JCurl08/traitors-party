@@ -9,9 +9,34 @@ import {
   gotItCard,
   endTurn,
   startPhase2,
+  startPhase3,
 } from "../firebase/gameService";
 
 const TEAM_COLORS = { A: "#3b82f6", B: "#ef4444" };
+
+const ROUND_RULES = {
+  1: {
+    title: "📖 Round 1 — Free Describe",
+    intro: "Players take turns getting their team to guess cards from the deck.",
+    turnRule: "Say anything — words, sounds, gestures — to get your team to guess the card. You cannot say the word itself.",
+    gotItNote: "The card moves to Round 2's deck and your team scores a point.",
+    extra: "After time runs out the next player from the opposite team takes a turn. The round ends when all cards have been guessed.",
+  },
+  2: {
+    title: "🔤 Round 2 — One Word",
+    intro: "Same cards, new challenge! The deck contains all the cards guessed in Round 1.",
+    turnRule: "You may only say ONE word to get your team to guess the card. No gestures, no extra sounds — just one word!",
+    gotItNote: "The card moves to Round 3's deck and your team scores a point.",
+    extra: "The round ends when all cards have been guessed.",
+  },
+  3: {
+    title: "🎭 Round 3 — Charades",
+    intro: "Final round! Same cards again, but now you cannot say a single word.",
+    turnRule: "No talking at all — act it out, mime, use gestures. Your team should know these cards well by now!",
+    gotItNote: "Your team scores a point.",
+    extra: "The round ends when all cards have been guessed.",
+  },
+};
 
 // ─── Root game router ─────────────────────────────────────────────────────────
 
@@ -19,6 +44,15 @@ export default function Game() {
   const { code } = useParams();
   const navigate = useNavigate();
   const [game, setGame] = useState(null);
+  const [devMode, setDevMode] = useState(() => localStorage.getItem("devMode") === "true");
+
+  const toggleDevMode = () => {
+    setDevMode((prev) => {
+      const next = !prev;
+      localStorage.setItem("devMode", String(next));
+      return next;
+    });
+  };
 
   const playerData = JSON.parse(sessionStorage.getItem("player_" + code) || "{}");
   const myName = playerData?.name || "";
@@ -44,37 +78,47 @@ export default function Game() {
   const currentPlayerName = (game.playerOrder || [])[game.currentTurnIndex || 0];
   const isCurrentPlayer = myName === currentPlayerName;
 
-  if (game.status === "entry") {
-    if ((game.entryDone || []).includes(myName)) {
-      return <WaitingScreen game={game} />;
+  const renderScreen = () => {
+    if (game.status === "entry") {
+      if ((game.entryDone || []).includes(myName)) {
+        return <WaitingScreen game={game} />;
+      }
+      return <EntryForm code={code} myName={myName} />;
     }
-    return <EntryForm code={code} myName={myName} />;
-  }
 
-  if (game.status === "rules") {
-    return <RulesScreen code={code} isHost={isHost} />;
-  }
+    if (game.status === "rules") return <RulesScreen code={code} isHost={isHost} phase={1} />;
+    if (game.status === "rules2") return <RulesScreen code={code} isHost={isHost} phase={2} />;
+    if (game.status === "rules3") return <RulesScreen code={code} isHost={isHost} phase={3} />;
 
-  if (game.status === "playing") {
+    if (game.status === "playing") {
+      return (
+        <GamePlay
+          code={code}
+          game={game}
+          myName={myName}
+          isCurrentPlayer={isCurrentPlayer}
+          currentPlayerName={currentPlayerName}
+          devMode={devMode}
+        />
+      );
+    }
+
+    if (game.status === "score") {
+      return <ScoreScreen code={code} game={game} isHost={isHost} />;
+    }
+
     return (
-      <GamePlay
-        code={code}
-        game={game}
-        myName={myName}
-        isCurrentPlayer={isCurrentPlayer}
-        currentPlayerName={currentPlayerName}
-      />
+      <div style={{ textAlign: "center", padding: "2rem" }}>
+        <p>Unknown game state: {game.status}</p>
+      </div>
     );
-  }
-
-  if (game.status === "score") {
-    return <ScoreScreen code={code} game={game} isHost={isHost} />;
-  }
+  };
 
   return (
-    <div style={{ textAlign: "center", padding: "2rem" }}>
-      <p>Unknown game state: {game.status}</p>
-    </div>
+    <>
+      {renderScreen()}
+      <DevModeToggle devMode={devMode} onToggle={toggleDevMode} />
+    </>
   );
 }
 
@@ -156,10 +200,11 @@ function WaitingScreen({ game }) {
 
 // ─── Rules screen ─────────────────────────────────────────────────────────────
 
-function RulesScreen({ code, isHost }) {
+function RulesScreen({ code, isHost, phase }) {
+  const rules = ROUND_RULES[phase];
   return (
     <div style={{ textAlign: "center", padding: "2rem" }}>
-      <h1>📖 Round 1 Rules</h1>
+      <h1>{rules.title}</h1>
       <div
         style={{
           maxWidth: "480px",
@@ -168,29 +213,24 @@ function RulesScreen({ code, isHost }) {
           lineHeight: "1.7",
         }}
       >
-        <p>Players take turns trying to get their team to guess cards from the deck.</p>
+        <p>{rules.intro}</p>
         <p>
-          <strong>On your turn:</strong> you have <strong>60 seconds</strong>. Say anything to get
-          your team to guess the card!
+          <strong>On your turn:</strong> you have <strong>60 seconds</strong>. {rules.turnRule}
         </p>
         <p>
           <strong>Pass</strong> — the card goes to the bottom of the deck and you get a new one.
         </p>
         <p>
-          <strong>Got It!</strong> — your team guessed correctly. The card moves to the next
-          round&apos;s deck and your team scores a point.
+          <strong>Got It!</strong> — your team guessed correctly. {rules.gotItNote}
         </p>
-        <p>
-          After time runs out the next player from the opposite team takes a turn. The phase ends
-          when all cards have been guessed. Most points wins!
-        </p>
+        <p>{rules.extra}</p>
       </div>
       {isHost ? (
         <button
           onClick={() => beginPlay(code)}
           style={{ marginTop: "2rem", padding: "0.75rem 2rem", fontSize: "1rem", cursor: "pointer" }}
         >
-          Start Round 1
+          Start Round {phase}
         </button>
       ) : (
         <p style={{ marginTop: "2rem", color: "#6b7280" }}>Waiting for the host to start…</p>
@@ -201,7 +241,7 @@ function RulesScreen({ code, isHost }) {
 
 // ─── Gameplay screen ──────────────────────────────────────────────────────────
 
-function GamePlay({ code, game, myName, isCurrentPlayer, currentPlayerName }) {
+function GamePlay({ code, game, myName, isCurrentPlayer, currentPlayerName, devMode }) {
   const [timeLeft, setTimeLeft] = useState(null);
   const endTurnFired = useRef(false);
 
@@ -248,6 +288,9 @@ function GamePlay({ code, game, myName, isCurrentPlayer, currentPlayerName }) {
         padding: "2rem",
       }}
     >
+      <p style={{ margin: "0 0 0.25rem", fontSize: "0.85rem", opacity: 0.8 }}>
+        Round {game.phase}
+      </p>
       <h1 style={{ marginBottom: "0.25rem" }}>{currentPlayerName}&apos;s Turn</h1>
       <h3 style={{ marginTop: 0, marginBottom: "0.5rem" }}>Team {currentPlayer?.team}</h3>
       <p style={{ margin: "0 0 0.25rem" }}>
@@ -318,6 +361,25 @@ function GamePlay({ code, game, myName, isCurrentPlayer, currentPlayerName }) {
           ) : (
             <p style={{ fontSize: "1.1rem" }}>{currentPlayerName} is cluing now…</p>
           )}
+          {/* Dev mode: skip timer button visible to all players */}
+          {devMode && (
+            <div style={{ marginTop: "1.5rem" }}>
+              <button
+                onClick={() => endTurn(code)}
+                style={{
+                  padding: "0.4rem 1.2rem",
+                  fontSize: "0.85rem",
+                  cursor: "pointer",
+                  background: "#fbbf24",
+                  border: "none",
+                  borderRadius: "4px",
+                  color: "#1f2937",
+                }}
+              >
+                ⏭ Skip Timer
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -329,8 +391,8 @@ function GamePlay({ code, game, myName, isCurrentPlayer, currentPlayerName }) {
 function ScoreScreen({ code, game, isHost }) {
   const scoreA = game.scores?.A || 0;
   const scoreB = game.scores?.B || 0;
-  const winner =
-    scoreA > scoreB ? "Team A" : scoreB > scoreA ? "Team B" : null;
+  const winner = scoreA > scoreB ? "Team A" : scoreB > scoreA ? "Team B" : null;
+  const isLastRound = game.phase === 3;
 
   return (
     <div style={{ textAlign: "center", padding: "2rem" }}>
@@ -346,26 +408,46 @@ function ScoreScreen({ code, game, isHost }) {
         </div>
       </div>
 
-      {game.phase === 1 && (
-        <>
-          {isHost ? (
-            <button
-              onClick={() => startPhase2(code)}
-              style={{ padding: "0.75rem 2rem", fontSize: "1rem", cursor: "pointer" }}
-            >
-              Start Round 2
-            </button>
-          ) : (
-            <p style={{ color: "#6b7280" }}>Waiting for the host to start Round 2…</p>
-          )}
-        </>
-      )}
-
-      {game.phase === 2 && (
+      {isLastRound ? (
         <h2 style={{ marginTop: "1rem" }}>
           {winner ? `${winner} wins! 🎉` : "It's a tie! 🤝"}
         </h2>
+      ) : isHost ? (
+        <button
+          onClick={() => (game.phase === 1 ? startPhase2(code) : startPhase3(code))}
+          style={{ padding: "0.75rem 2rem", fontSize: "1rem", cursor: "pointer" }}
+        >
+          Start Round {game.phase + 1}
+        </button>
+      ) : (
+        <p style={{ color: "#6b7280" }}>Waiting for the host to start Round {game.phase + 1}…</p>
       )}
     </div>
+  );
+}
+
+// ─── Dev mode toggle ──────────────────────────────────────────────────────────
+
+function DevModeToggle({ devMode, onToggle }) {
+  return (
+    <button
+      onClick={onToggle}
+      style={{
+        position: "fixed",
+        bottom: "1rem",
+        right: "1rem",
+        fontSize: "0.75rem",
+        padding: "0.25rem 0.6rem",
+        opacity: 0.5,
+        cursor: "pointer",
+        background: devMode ? "#fbbf24" : "#e5e7eb",
+        border: "1px solid #d1d5db",
+        borderRadius: "4px",
+        color: "#374151",
+        zIndex: 1000,
+      }}
+    >
+      {devMode ? "🛠 Dev ON" : "🛠"}
+    </button>
   );
 }

@@ -1,6 +1,3 @@
-// src/firebase/gameService.js
-// All Firestore interactions for the Traitors Party game.
-
 import { db } from "./config";
 import {
   collection,
@@ -8,6 +5,7 @@ import {
   setDoc,
   getDoc,
   updateDoc,
+  arrayUnion,
   onSnapshot,
 } from "firebase/firestore";
 
@@ -30,39 +28,30 @@ function generatePlayerId() {
  * Returns { gameId, hostId } so the host can navigate to /host/:gameId.
  */
 export async function createGame(hostName) {
-  const gameId = generateCode();
-  const hostId = generatePlayerId();
-  const gameRef = doc(collection(db, "games"), gameId);
+  const code = generateCode();
+  const gameRef = doc(collection(db, "games"), code);
   await setDoc(gameRef, {
-    code: gameId,
-    phase: "LOBBY",
-    round: 1,
+    code,
+    host: hostName,
+    players: [hostName],
+    status: "waiting",
     createdAt: new Date().toISOString(),
-    players: {
-      [hostId]: { id: hostId, name: hostName, isHost: true, alive: true },
-    },
   });
-  return { gameId, hostId };
+  return code;
 }
 
 /**
  * joinGame – called by a player to join an existing game by code.
- * Returns the new playerId, or throws if the game does not exist or the name is taken.
+ * Returns the new playerId, or throws if the game does not exist.
  */
 export async function joinGame(code, playerName) {
   const gameRef = doc(db, "games", code);
   const snap = await getDoc(gameRef);
   if (!snap.exists()) throw new Error("Game not found");
   const data = snap.data();
-  const nameTaken = Object.values(data.players).some(
-    (p) => p.name === playerName
-  );
-  if (nameTaken) throw new Error("Name already taken");
-  const playerId = generatePlayerId();
-  await updateDoc(gameRef, {
-    [`players.${playerId}`]: { id: playerId, name: playerName, isHost: false, alive: true },
-  });
-  return playerId;
+  if (data.players.includes(playerName)) throw new Error("Name already taken");
+  await updateDoc(gameRef, { players: arrayUnion(playerName) });
+  return data;
 }
 
 /**
